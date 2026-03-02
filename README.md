@@ -1,2 +1,9 @@
-# Cooler
-Collaborative virtual board inspired by fridge magnets. Real-time sticky notes powered by Next.js &amp; Supabase.
+# 🧊 Cooler
+
+Digital fridge door for your thoughts.
+
+## 🚀 Stack
+- **Frontend:** Next.js (App Router)
+- **Styling:** Tailwind CSS
+- **Backend/DB:** Supabase (PostgreSQL)
+- **Deployment:** Vercel
