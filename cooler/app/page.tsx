@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Note from "./components/Note";
 import { supabase } from "@/supabase-client";
+import AuthPage from "./login/page";
 
 export default function FridgePage() {
   const dummyNotes = [
@@ -19,12 +20,33 @@ export default function FridgePage() {
     "rotate-3",
   ];
 
+  const [session, setSession] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [notesLoading, setNotesLoading] = useState(false);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      setAuthChecking(false); // Až teď víme, na čem jsme
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setAuthChecking(false);
+      },
+    );
+
+    return () => authListener.subscription.unsubscribe();
+  }, []);
 
   const fetchNotes = async () => {
-    setLoading(true);
+    setNotesLoading(true);
     try {
       const { error, data } = await supabase
         .from("notes")
@@ -37,13 +59,15 @@ export default function FridgePage() {
     } catch (err) {
       console.error("Error fetching notes:", err);
     } finally {
-      setLoading(false);
+      setNotesLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNotes();
-  }, []);
+    if (session) {
+      fetchNotes();
+    }
+  }, [session]);
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +96,12 @@ export default function FridgePage() {
       fetchNotes();
     }
   };
+
+  if (authChecking) return <div className="min-h-screen bg-gray-300" />;
+
+  if (!session) {
+    return <AuthPage />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-300 flex flex-col items-center py-12 px-4">
