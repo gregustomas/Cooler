@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Note from "./components/Note";
+import { supabase } from "@/supabase-client";
 
 export default function FridgePage() {
   const dummyNotes = [
@@ -17,6 +19,49 @@ export default function FridgePage() {
     "rotate-3",
   ];
 
+  const [notes, setNotes] = useState<any[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotes = async () => {
+    setLoading(true);
+    try {
+      const { error, data } = await supabase
+        .from("notes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setNotes(data);
+      }
+    } catch (err) {
+      console.error("Error fetching notes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    const { error } = await supabase
+      .from("notes")
+      .insert([{ note: inputValue.trim() }]);
+
+    if (error) {
+      alert("Nepovedlo se přilepit vzkaz: " + error.message);
+      return;
+    } else {
+      setInputValue("");
+      fetchNotes();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-300 flex flex-col items-center py-12 px-4">
       {/* Značka */}
@@ -28,18 +73,26 @@ export default function FridgePage() {
       </div>
 
       {/* Input */}
-      <div className="w-full max-w-md bg-gray-400 p-1 rounded-xl shadow-2xl mb-12">
+      <form
+        onSubmit={handleAddNote}
+        className="w-full max-w-md bg-gray-400 p-1 rounded-xl shadow-2xl mb-12"
+      >
         <div className="bg-gray-800 rounded-lg p-4 flex gap-2 border-2 border-gray-600">
           <input
             type="text"
             placeholder="Napiš vzkaz..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-400 transition-all"
           />
-          <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded shadow-lg active:transform active:scale-95 transition-all text-sm uppercase">
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded shadow-lg active:transform active:scale-95 transition-all text-sm uppercase"
+          >
             Přilepit
           </button>
         </div>
-      </div>
+      </form>
 
       {/* Hlavní plocha */}
       <div className="w-full max-w-5xl bg-linear-to-br from-gray-400 via-gray-200 to-gray-400 min-h-150 rounded-t-[50px] shadow-[inset_0_0_50px_rgba(0,0,0,0.2)] p-10 border-x-8 border-t-8 border-gray-500 relative overflow-hidden">
@@ -48,7 +101,7 @@ export default function FridgePage() {
 
         {/* Grid se vzkazy */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 relative z-10">
-          {dummyNotes.map((n) => (
+          {notes.map((n) => (
             <Note
               key={n.id}
               note={n.note}
