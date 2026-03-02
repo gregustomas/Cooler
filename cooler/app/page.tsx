@@ -62,6 +62,17 @@ export default function FridgePage() {
     }
   };
 
+  const handleDeleteNote = async (id: number) => {
+    const { error } = await supabase.from("notes").delete().eq("id", id);
+
+    if (error) {
+      alert("Nepovedlo se smazat vzkaz: " + error.message);
+      return;
+    } else {
+      fetchNotes();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-300 flex flex-col items-center py-12 px-4">
       {/* Značka */}
@@ -107,6 +118,7 @@ export default function FridgePage() {
               note={n.note}
               color={n.color}
               rotate={rotations[n.id % rotations.length]}
+              onDelete={() => handleDeleteNote(n.id)}
             />
           ))}
         </div>
